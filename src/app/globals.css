@@ -472,4 +472,4 @@ table.data tr:last-child td { border-bottom: 0; }
 .login { background: var(--surface-2); }
 .login .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 32px; box-shadow: var(--shadow-lg); max-width: 460px; }
 .role-list button { border-left: 3px solid var(--rc, var(--border)); }
-.room-tile .room-name, .room-tile .room-sub { padding-right: 64px; }
+@media (max-width: 560px) { .room-tile .room-name { padding-right: 64px; } }
