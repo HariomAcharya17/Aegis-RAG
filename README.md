@@ -6,7 +6,7 @@ retrieval before the model is called. Jailbreaks have nothing to leak.
 
 Built entirely on free tiers: Vercel, Supabase, Groq, Gemini embeddings, Langfuse, GitHub Actions.
 
-- **Landing page + guided demo**: a plain-language explainer at `/` and a step-by-step demo panel with one-click persona switching, so anyone can understand the idea in 3 minutes
+- **Landing page + story mode**: a plain-language explainer at `/` with an animated "same question, two chatbots" replay, and five playable stories (curious intern, social engineer, HR manager, finance analyst, executive) driven by a guide panel that switches persona and asks the questions for you
 - **Assistant**: hybrid search (pgvector + full text), typed tools over HR / finance / marketing tables, citations, follow-up rewriting
 - **Guardrails**: Llama Prompt Guard 2, a written safety policy run by gpt-oss-safeguard, out-of-scope detection, PII redaction, canary-token leak scan, ingestion-time injection scan
 - **Red team arena**: attack a prompt-only design and the database-enforced design side by side; successful attacks become regression tests

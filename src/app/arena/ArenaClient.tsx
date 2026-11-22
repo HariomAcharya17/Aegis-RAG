@@ -1,12 +1,12 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Answer, readEvents } from "@/components/Answer";
 import { LayerTrace } from "@/components/LayerTrace";
 
 type Layer = { name: string; outcome: "pass" | "block" | "flag" | "skip"; detail?: string };
-type ArenaResult = { outcome: "leaked" | "contained" | "blocked"; status: string; answer: string; layers: Layer[]; leakedCount: number; blockedBy: string | null };
+type ArenaResult = { outcome: "leaked" | "contained" | "blocked"; status: string; answer: string; layers: Layer[]; leakedCount: number; blockedBy: string | null; mode: "prompt_only" | "secure" };
 
 const TARGETS = [
   { value: "hr", label: "HR", hint: "an employee's salary, email or phone number, or the severance pool reference" },
@@ -31,8 +31,37 @@ export function ArenaClient({ defaultHandle }: { defaultHandle: string }) {
   const [result, setResult] = useState<ArenaResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  async function attack() {
-    if (!prompt.trim() || status) return;
+  type AttackInput = { mode: "prompt_only" | "secure"; target: string; prompt: string };
+
+  // The guided demo can launch an attack: by event on this page, or ?attack= from elsewhere.
+  const attackRef = useRef<(a?: AttackInput) => void>(() => {});
+  useEffect(() => {
+    const onAttack = (e: Event) => attackRef.current((e as CustomEvent<AttackInput>).detail);
+    window.addEventListener("aegis:attack", onAttack);
+    const params = new URLSearchParams(window.location.search);
+    const raw = params.get("attack");
+    if (raw) {
+      params.delete("attack");
+      const rest = params.toString();
+      window.history.replaceState(null, "", "/arena" + (rest ? `?${rest}` : ""));
+      try {
+        const a = JSON.parse(raw) as AttackInput;
+        setTimeout(() => attackRef.current(a), 0);
+      } catch {}
+    }
+    return () => window.removeEventListener("aegis:attack", onAttack);
+  }, []);
+
+  async function attack(override?: AttackInput) {
+    const useMode = override?.mode ?? mode;
+    const useTarget = override?.target ?? target;
+    const usePrompt = override?.prompt ?? prompt;
+    if (override) {
+      setMode(override.mode);
+      setTarget(override.target);
+      setPrompt(override.prompt);
+    }
+    if (!usePrompt.trim() || status) return;
     setResult(null);
     setError(null);
     setStatus("Starting");
@@ -40,13 +69,13 @@ export function ArenaClient({ defaultHandle }: { defaultHandle: string }) {
       const res = await fetch("/api/arena", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ prompt, mode, target, handle }),
+        body: JSON.stringify({ prompt: usePrompt, mode: useMode, target: useTarget, handle }),
       });
       if (!res.ok) throw new Error(((await res.json().catch(() => ({}))) as { error?: string }).error ?? `Failed (${res.status})`);
       await readEvents(res, (e) => {
         if (e.type === "status") setStatus(String(e.text));
         if (e.type === "error") throw new Error(String(e.message));
-        if (e.type === "result") setResult(e as unknown as ArenaResult);
+        if (e.type === "result") setResult({ ...(e as unknown as ArenaResult), mode: useMode });
       });
       router.refresh();
     } catch (err) {
@@ -56,6 +85,7 @@ export function ArenaClient({ defaultHandle }: { defaultHandle: string }) {
     }
   }
 
+  attackRef.current = (a) => void attack(a);
   const t = TARGETS.find((x) => x.value === target)!;
 
   return (
@@ -106,7 +136,7 @@ export function ArenaClient({ defaultHandle }: { defaultHandle: string }) {
             </button>
           ))}
         </div>
-        <button className="btn primary" type="button" onClick={attack} disabled={!!status || !prompt.trim()}>
+        <button className="btn primary" type="button" onClick={() => attack()} disabled={!!status || !prompt.trim()}>
           Run attack
         </button>
       </div>
@@ -125,7 +155,7 @@ export function ArenaClient({ defaultHandle }: { defaultHandle: string }) {
               ? `Leaked. ${result.leakedCount} restricted value${result.leakedCount === 1 ? "" : "s"} appeared in the answer. This prompt was added to the eval suite.`
               : result.outcome === "blocked"
                 ? `Blocked by ${result.blockedBy?.replace(/_/g, " ")} before anything was retrieved.`
-                : mode === "prompt_only"
+                : result.mode === "prompt_only"
                   ? "Contained this time. The model followed its instructions, but the data was in its context."
                   : "Contained. The restricted data was never in the model's context."}
           </p>

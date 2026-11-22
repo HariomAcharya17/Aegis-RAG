@@ -17,7 +17,7 @@ export function LoginForms({ demo, users }: { demo: boolean; users: DemoUser[] }
           
           <div className="role-list">
             {users.map((u) => (
-              <button key={u.role} type="submit" name="role" value={u.role} disabled={demoPending}>
+              <button key={u.role} type="submit" name="role" value={u.role} disabled={demoPending} className={`r-${u.role}`}>
                 <span>
                   {u.name} <span className="faint">· {ROLE_LABEL[u.role]}</span>
                 </span>

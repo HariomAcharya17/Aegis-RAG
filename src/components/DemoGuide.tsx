@@ -4,200 +4,223 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { switchDemoUser } from "@/app/auth/actions";
 import { DEMO_USERS, ROLE_LABEL, type Role } from "@/lib/roles";
+import { STORIES, storyById, type StoryAction } from "@/lib/stories";
 
-type Action =
-  | { kind: "signin"; role: Role; next: string; label: string }
-  | { kind: "ask"; question: string; label: string }
-  | { kind: "link"; href: string; label: string }
-  | { kind: "none" };
+const KEY = "aegis-guide";
+type Saved = { story: string | null; step: number; open: boolean };
 
-type Step = { title: string; body: string; role: Role | null; action: Action };
-
-const ASK_PROFIT = "What was total profit in 2025?";
-
-export const GUIDE_STEPS: Step[] = [
-  {
-    title: "Meet Sam, a regular employee",
-    body: "Each demo account is a different person at the fictional company Kestrel Dynamics. Sam is an ordinary employee who may only read the general handbook.",
-    role: "employee",
-    action: { kind: "signin", role: "employee", next: "/chat", label: "Become Sam" },
-  },
-  {
-    title: "Ask an everyday question",
-    body: "Sam asks about holidays. The answer cites the handbook page it came from. Open “How this answer was made” under it to see every check it passed.",
-    role: "employee",
-    action: { kind: "ask", question: "How many PTO days do I get?", label: "Ask it" },
-  },
-  {
-    title: "Ask for numbers Sam can't see",
-    body: "Now Sam asks for company profit. For Sam, the database never hands Finance documents to the AI, so there is nothing to leak. Sam is told the data exists and can ask for access.",
-    role: "employee",
-    action: { kind: "ask", question: ASK_PROFIT, label: "Ask it" },
-  },
-  {
-    title: "Request access",
-    body: "Under that answer, click “Request Finance access”, write a short reason, and send it. Then click Next.",
-    role: "employee",
-    action: { kind: "none" },
-  },
-  {
-    title: "Become Elena, the executive",
-    body: "Elena runs the admin console: access requests, a log of every question asked, and what the traffic would cost.",
-    role: null,
-    action: { kind: "signin", role: "executive", next: "/admin", label: "Become Elena" },
-  },
-  {
-    title: "Approve Sam's request",
-    body: "Under “Access requests”, click “Grant 1 hour” next to Sam's request. Scroll down to see every question in the audit log, including the one Sam was refused.",
-    role: "executive",
-    action: { kind: "none" },
-  },
-  {
-    title: "Back to Sam",
-    body: "Ask the profit question again. The database now includes Finance for Sam for one hour, so the answer appears, with its source.",
-    role: "employee",
-    action: { kind: "signin", role: "employee", next: `/chat?ask=${encodeURIComponent(ASK_PROFIT)}`, label: "Become Sam and ask" },
-  },
-  {
-    title: "Now try to break it",
-    body: "In the red team arena, run the same attack against two designs: a chatbot that is only told to keep secrets, and Aegis. Watch which one leaks.",
-    role: null,
-    action: { kind: "link", href: "/arena", label: "Open the arena" },
-  },
-];
-
-const STEP_KEY = "aegis-guide-step";
-const OPEN_KEY = "aegis-guide-open";
-
-function store(key: string, value: string) {
+function load(): Saved {
   try {
-    localStorage.setItem(key, value);
-  } catch {
-    // private mode: the guide still works, it just won't remember
-  }
+    const raw = localStorage.getItem(KEY);
+    if (raw) return { story: null, step: 0, open: false, ...(JSON.parse(raw) as Partial<Saved>) };
+  } catch {}
+  return { story: null, step: 0, open: false };
 }
+function save(s: Saved) {
+  try {
+    localStorage.setItem(KEY, JSON.stringify(s));
+  } catch {}
+}
+
+const person = (r: Role) => DEMO_USERS.find((u) => u.role === r)!.name;
 
 export function DemoGuide({ role }: { role: Role }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [step, setStep] = useState(0);
-  const [open, setOpen] = useState(false);
+  const [state, setState] = useState<Saved>({ story: null, step: 0, open: false });
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    let savedStep = 0;
-    let savedOpen = false;
-    try {
-      savedStep = Number(localStorage.getItem(STEP_KEY) ?? "0") || 0;
-      savedOpen = localStorage.getItem(OPEN_KEY) === "1";
-    } catch {}
+    const saved = load();
     const params = new URLSearchParams(window.location.search);
-    if (params.get("guide") === "1") {
-      savedOpen = true;
-      savedStep = Math.max(savedStep, 1); // they just became Sam from the landing page
-      store(OPEN_KEY, "1");
+    const fromUrl = params.get("story");
+    if (fromUrl && storyById(fromUrl)) {
+      saved.story = fromUrl;
+      saved.step = 0;
+      saved.open = true;
+      params.delete("story");
+      const rest = params.toString();
+      window.history.replaceState(null, "", pathname + (rest ? `?${rest}` : ""));
     }
-    setStep(Math.min(savedStep, GUIDE_STEPS.length - 1));
-    setOpen(savedOpen);
+    setState(saved);
+    save(saved);
     setReady(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const go = (n: number) => {
-    const next = Math.max(0, Math.min(n, GUIDE_STEPS.length - 1));
-    setStep(next);
-    store(STEP_KEY, String(next));
-  };
-  const toggle = (value: boolean) => {
-    setOpen(value);
-    store(OPEN_KEY, value ? "1" : "0");
-  };
-
   useEffect(() => {
-    document.documentElement.classList.toggle("guide-open", ready && open);
+    document.documentElement.classList.toggle("guide-open", ready && state.open);
     return () => document.documentElement.classList.remove("guide-open");
-  }, [ready, open]);
+  }, [ready, state.open]);
+
+  const update = (patch: Partial<Saved>) =>
+    setState((cur) => {
+      const next = { ...cur, ...patch };
+      save(next);
+      return next;
+    });
 
   if (!ready) return null;
 
-  if (!open) {
+  if (!state.open) {
+    const story = storyById(state.story);
     return (
-      <button type="button" className="guide-pill" onClick={() => toggle(true)}>
-        Demo guide · step {step + 1} of {GUIDE_STEPS.length}
+      <button type="button" className="guide-pill" onClick={() => update({ open: true })}>
+        <span className="guide-pill-dot" aria-hidden />
+        {story ? `${story.title} · step ${state.step + 1} of ${story.steps.length}` : "Guided demo"}
       </button>
     );
   }
 
-  const s = GUIDE_STEPS[step];
-  const wrongRole = s.role !== null && s.role !== role;
-  const person = (r: Role) => DEMO_USERS.find((u) => u.role === r)!.name;
+  const story = storyById(state.story);
 
-  const ask = (q: string) => {
-    if (pathname === "/chat") window.dispatchEvent(new CustomEvent("aegis:ask", { detail: q }));
-    else router.push(`/chat?ask=${encodeURIComponent(q)}`);
+  // ------------------------------------------------------------ story picker
+  if (!story) {
+    return (
+      <aside className="guide" aria-label="Guided demo">
+        <div className="guide-top">
+          <span className="guide-kicker">Guided demo</span>
+          <button type="button" className="btn ghost small" onClick={() => update({ open: false })}>
+            Hide
+          </button>
+        </div>
+        <h3>Pick a story</h3>
+        <p className="small">Each takes a minute or two. The panel signs you in as the right person and asks the questions for you.</p>
+        <div className="story-list">
+          {STORIES.map((s) => (
+            <form key={s.id} action={switchDemoUser} onSubmit={() => save({ story: s.id, step: 0, open: true })}>
+              <input type="hidden" name="role" value={s.role} />
+              <input type="hidden" name="next" value={s.start} />
+              <button type="submit" className={`story-item r-${s.role}`}>
+                <strong>{s.title}</strong>
+                <span className="small muted">{s.pitch}</span>
+              </button>
+            </form>
+          ))}
+        </div>
+      </aside>
+    );
+  }
+
+  // ------------------------------------------------------------ finished
+  if (state.step >= story.steps.length) {
+    const lastStep = story.steps[story.steps.length - 1];
+    return (
+      <aside className="guide" aria-label="Guided demo">
+        <div className="guide-top">
+          <span className="guide-kicker">{story.title} · done</span>
+          <button type="button" className="btn ghost small" onClick={() => update({ open: false })}>
+            Hide
+          </button>
+        </div>
+        <div className="guide-progress" aria-hidden>
+          {story.steps.map((_, i) => (
+            <span key={i} className="on" />
+          ))}
+        </div>
+        <h3>Story complete</h3>
+        {lastStep.look && (
+          <p className="guide-look small">
+            <strong>Look for:</strong> {lastStep.look}
+          </p>
+        )}
+        <p className="small" style={{ marginTop: 10 }}>
+          Same assistant, same database. The only thing that changed was who was asking.
+        </p>
+        <div className="guide-actions">
+          <button type="button" className="btn ghost small" onClick={() => update({ step: story.steps.length - 1 })}>
+            Back
+          </button>
+          <span style={{ flex: 1 }} />
+          <button type="button" className="btn primary small" onClick={() => update({ story: null, step: 0 })}>
+            Play another story
+          </button>
+        </div>
+      </aside>
+    );
+  }
+
+  // ------------------------------------------------------------ a story step
+  const stepIndex = Math.min(state.step, story.steps.length - 1);
+  const step = story.steps[stepIndex];
+  const last = stepIndex >= story.steps.length - 1;
+  const wrongRole = step.role !== null && step.role !== role && step.action.kind !== "signin";
+
+  const run = (a: StoryAction) => {
+    if (a.kind === "ask") {
+      if (pathname === "/chat") window.dispatchEvent(new CustomEvent("aegis:ask", { detail: a.question }));
+      else router.push(`/chat?ask=${encodeURIComponent(a.question)}`);
+    }
+    if (a.kind === "attack") {
+      const detail = { mode: a.mode, target: a.target, prompt: a.prompt };
+      if (pathname === "/arena") window.dispatchEvent(new CustomEvent("aegis:attack", { detail }));
+      else router.push(`/arena?attack=${encodeURIComponent(JSON.stringify(detail))}`);
+    }
+    if (a.kind === "link") router.push(a.href);
   };
 
   return (
-    <aside className="guide" aria-label="Demo guide">
+    <aside className="guide" aria-label="Guided demo">
       <div className="guide-top">
-        <span className="small faint">
-          Demo guide · step {step + 1} of {GUIDE_STEPS.length}
+        <span className="guide-kicker">
+          {story.title} · {stepIndex + 1}/{story.steps.length}
         </span>
-        <button type="button" className="btn ghost small" onClick={() => toggle(false)} aria-label="Hide guide">
+        <button type="button" className="btn ghost small" onClick={() => update({ open: false })}>
           Hide
         </button>
       </div>
       <div className="guide-progress" aria-hidden>
-        {GUIDE_STEPS.map((_, i) => (
-          <span key={i} className={i <= step ? "on" : ""} />
+        {story.steps.map((_, i) => (
+          <span key={i} className={i <= stepIndex ? "on" : ""} />
         ))}
       </div>
-      <h3>{s.title}</h3>
-      <p className="small">{s.body}</p>
+      <h3>{step.title}</h3>
+      <p className="small">{step.body}</p>
+      {step.look && (
+        <p className="guide-look small">
+          <strong>Look for:</strong> {step.look}
+        </p>
+      )}
 
-      {wrongRole && s.action.kind !== "signin" && (
+      {wrongRole && (
         <form action={switchDemoUser} className="notice small" style={{ marginTop: 10 }}>
-          <input type="hidden" name="role" value={s.role!} />
-          <input type="hidden" name="next" value="/chat" />
-          You&apos;re signed in as {person(role)} ({ROLE_LABEL[role]}). This step is for {person(s.role!)}.{" "}
+          <input type="hidden" name="role" value={step.role!} />
+          <input type="hidden" name="next" value={pathname} />
+          You&apos;re {person(role)} ({ROLE_LABEL[role]}) right now. This step is for {person(step.role!)}.{" "}
           <button type="submit" className="link-btn">
-            Switch to {person(s.role!)}
+            Switch to {person(step.role!)}
           </button>
         </form>
       )}
 
-      <div className="row guide-actions">
-        {step > 0 && (
-          <button type="button" className="btn ghost small" onClick={() => go(step - 1)}>
-            Back
-          </button>
-        )}
-        <span style={{ flex: 1 }} />
-        {s.action.kind === "signin" && (
-          <form action={switchDemoUser} onSubmit={() => go(step + 1)}>
-            <input type="hidden" name="role" value={s.action.role} />
-            <input type="hidden" name="next" value={s.action.next} />
+      <div className="guide-actions">
+        {step.action.kind === "signin" && (
+          <form action={switchDemoUser} onSubmit={() => save({ ...state, step: stepIndex + 1 })}>
+            <input type="hidden" name="role" value={step.action.role} />
+            <input type="hidden" name="next" value={step.action.next} />
             <button type="submit" className="btn primary small">
-              {s.action.label}
+              {step.action.label}
             </button>
           </form>
         )}
-        {s.action.kind === "ask" && !wrongRole && (
-          <button type="button" className="btn primary small" onClick={() => ask((s.action as { question: string }).question)}>
-            {s.action.label}
+        {(step.action.kind === "ask" || step.action.kind === "attack" || step.action.kind === "link") && !wrongRole && (
+          <button type="button" className="btn primary small" onClick={() => run(step.action)}>
+            {step.action.label}
           </button>
         )}
-        {s.action.kind === "link" && (
-          <button type="button" className="btn primary small" onClick={() => router.push((s.action as { href: string }).href)}>
-            {s.action.label}
+        <span style={{ flex: 1 }} />
+        {stepIndex > 0 && (
+          <button type="button" className="btn ghost small" onClick={() => update({ step: stepIndex - 1 })}>
+            Back
           </button>
         )}
-        {step < GUIDE_STEPS.length - 1 ? (
-          <button type="button" className="btn small" onClick={() => go(step + 1)}>
-            Next
+        {last ? (
+          <button type="button" className="btn small" onClick={() => update({ step: story.steps.length })}>
+            Finish
           </button>
         ) : (
-          <button type="button" className="btn small" onClick={() => { go(0); toggle(false); }}>
-            Finish
+          <button type="button" className="btn small" onClick={() => update({ step: stepIndex + 1 })}>
+            Next
           </button>
         )}
       </div>

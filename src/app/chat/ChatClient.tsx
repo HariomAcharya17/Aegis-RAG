@@ -24,11 +24,13 @@ export function ChatClient({
   firstName,
   role,
   suggestions,
+  offLimits,
   showDiagnostics,
 }: {
   firstName: string;
   role: Role;
   suggestions: string[];
+  offLimits: string | null;
   showDiagnostics: boolean;
 }) {
   const [messages, setMessages] = useState<Msg[]>([]);
@@ -47,9 +49,12 @@ export function ChatClient({
   useEffect(() => {
     const onAsk = (e: Event) => askRef.current((e as CustomEvent<string>).detail);
     window.addEventListener("aegis:ask", onAsk);
-    const q = new URLSearchParams(window.location.search).get("ask");
+    const params = new URLSearchParams(window.location.search);
+    const q = params.get("ask");
     if (q) {
-      window.history.replaceState(null, "", "/chat");
+      params.delete("ask");
+      const rest = params.toString();
+      window.history.replaceState(null, "", "/chat" + (rest ? `?${rest}` : ""));
       setTimeout(() => askRef.current(q), 0);
     }
     return () => window.removeEventListener("aegis:ask", onAsk);
@@ -122,6 +127,12 @@ export function ChatClient({
                     {s}
                   </button>
                 ))}
+                {offLimits && (
+                  <button type="button" className="off-limits" onClick={() => ask(offLimits)}>
+                    <span>{offLimits}</span>
+                    <span className="off-tag">Off-limits for you. Try it</span>
+                  </button>
+                )}
               </div>
             </div>
           )}

@@ -381,9 +381,12 @@ stubbed Supabase auth schema. These were confirmed:
 14. HOW TO DEMO IT IN FIVE MINUTES
 ----------------------------------
 
-The app has this built in: the landing page (/) explains the idea in plain language, and "Start the guided
-demo" signs you in as Sam and opens a step-by-step panel that switches personas and asks the questions for
-you. Approved access lasts one hour in the demo, so the next visitor starts fresh.
+The app has this built in. The landing page (/) opens with an animated replay of a real arena run: the same
+social-engineering prompt sent to a prompt-only chatbot (it lists five salaries) and to Aegis (nothing to
+leak). Below it are five playable stories, each one sign-in click away: the curious intern, the social
+engineer, the HR manager, the finance analyst and the executive. A guide panel switches persona, asks the
+questions, launches arena attacks and says what to look for. Approved access lasts one hour in the demo,
+so the next visitor starts fresh.
 
 
 1. Sign in as Sam (employee). Ask "How many PTO days do I get?". You get an answer with a citation.

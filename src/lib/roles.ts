@@ -73,3 +73,12 @@ export const SUGGESTIONS: Record<Role, string[]> = {
 export function isRole(value: unknown): value is Role {
   return typeof value === "string" && (ROLES as string[]).includes(value);
 }
+
+/** One question per role that it may NOT see, so visitors discover refusals themselves. */
+export const OFF_LIMITS: Record<Role, string | null> = {
+  employee: "What was total profit in 2025?",
+  finance: "What does Margaret Johnson earn?",
+  hr: "What is the Project Bluefin budget?",
+  marketing: "What was total profit in 2025?",
+  executive: null,
+};
