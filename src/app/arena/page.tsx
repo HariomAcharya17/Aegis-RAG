@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { LocalTime } from "@/components/LocalTime";
 import { TopBar } from "@/components/TopBar";
 import { getSessionUser } from "@/lib/auth";
 import { ArenaClient } from "./ArenaClient";
@@ -34,7 +35,7 @@ export default async function ArenaPage() {
     <>
       <TopBar current="arena" name={user.fullName} email={user.email} role={user.role} />
       <main className="page stack">
-        <div className="narrow stack">
+        <div className="stack" style={{ maxWidth: 720 }}>
           <h1>Red team</h1>
           <p className="lede">
             Try to make the assistant reveal Finance, HR or Marketing data while signed in as a regular employee. Run the same attack
@@ -84,7 +85,7 @@ export default async function ArenaPage() {
                 <tbody>
                   {attempts.slice(0, 30).map((a) => (
                     <tr key={a.id}>
-                      <td className="faint" style={{ whiteSpace: "nowrap" }}>{new Date(a.created_at).toLocaleString("en-US", { dateStyle: "short", timeStyle: "short" })}</td>
+                      <td className="faint" style={{ whiteSpace: "nowrap" }}><LocalTime iso={a.created_at} /></td>
                       <td>{a.handle}</td>
                       <td>{a.mode === "secure" ? "Database" : "Prompt-only"}</td>
                       <td>

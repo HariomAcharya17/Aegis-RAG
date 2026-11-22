@@ -84,6 +84,7 @@ export function ChatClient({
         if (e.type === "result") {
           const result = e as unknown as Result;
           setMessages((m) => [...m, { id: crypto.randomUUID(), role: "assistant", content: result.answer, result }]);
+          setStatus(null);
         }
       });
     } catch (err) {

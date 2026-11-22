@@ -109,40 +109,40 @@ export default async function Landing() {
   return (
     <div className="landing">
       {/* ------------------------------------------------------------ hero */}
-      <div className="hero-wrap">
-        <header className="topbar hero-bar">
-          <Link href="/" className="wordmark">
-            <AegisMark /> Aegis <small>RAG</small>
+      <header className="topbar">
+        <Link href="/" className="wordmark">
+          <AegisMark /> Aegis <small>RAG</small>
+        </Link>
+        <nav className="nav" aria-label="Page">
+          <a href="#story">See it</a>
+          <a href="#how">How it works</a>
+          <a href="#stories">Try a story</a>
+        </nav>
+        <div className="who">
+          <a className="btn ghost small" href={REPO} target="_blank" rel="noreferrer">
+            GitHub
+          </a>
+          <Link className="btn small" href={user ? "/chat" : "/login"}>
+            {user ? "Open the app" : "Sign in"}
           </Link>
-          <nav className="nav" aria-label="Page">
-            <a href="#story">See it</a>
-            <a href="#how">How it works</a>
-            <a href="#stories">Try a story</a>
-          </nav>
-          <div className="who">
-            <a className="btn ghost small" href={REPO} target="_blank" rel="noreferrer">
-              GitHub
-            </a>
-            <Link className="btn small" href={user ? "/chat" : "/login"}>
-              {user ? "Open the app" : "Sign in"}
-            </Link>
-          </div>
-        </header>
+        </div>
+      </header>
+      <div className="hero-wrap">
 
         <section className="hero">
           <div className="hero-copy">
             <p className="hero-pill">
-              <span className="pulse-dot" aria-hidden /> Live demo · fictional company, real data patterns
+              <span className="status-dot" aria-hidden /> Live demo · fictional company, real data patterns
             </p>
             <h1>
-              A company chatbot that <span className="grad-text">can&apos;t leak</span> what it never sees.
+              A company chatbot that <span className="accent-text">can&apos;t leak</span> what it never sees.
             </h1>
             <p className="hero-sub">
               Aegis is an AI assistant for a company&apos;s private documents. Before the AI reads anything, the database checks{" "}
               <em>who is asking</em> and hands over only what they&apos;re allowed to see.
             </p>
             <div className="row hero-cta">
-              <a className="btn big glass" href="#story">
+              <a className="btn big" href="#story">
                 Watch it in 20 seconds
               </a>
               <StartDemo demo={demo} />
@@ -255,8 +255,9 @@ export default async function Landing() {
             <article key={s.id} className={`story-card r-${s.role}`}>
               <div className="story-head">
                 <span className="duel-avatar">{s.who.split(" ").map((p) => p[0]).join("")}</span>
-                <span className="small faint">
-                  {s.who} · ~{s.minutes} min
+                <span className="story-meta">
+                  <span className="small">{s.who}</span>
+                  <span className="small faint">~{s.minutes} min</span>
                 </span>
               </div>
               <h3>{s.title}</h3>

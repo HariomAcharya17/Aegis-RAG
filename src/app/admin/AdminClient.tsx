@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { LocalTime } from "@/components/LocalTime";
 import { DEPARTMENT_LABEL, ROLE_LABEL, type Department, type Role } from "@/lib/roles";
 
 type Request = {
@@ -53,7 +54,7 @@ export function RequestsTable({ requests }: { requests: Request[] }) {
             {requests.map((r) => (
               <tr key={r.id}>
                 <td className="faint" style={{ whiteSpace: "nowrap" }}>
-                  {new Date(r.createdAt).toLocaleString("en-US", { dateStyle: "short", timeStyle: "short" })}
+                  <LocalTime iso={r.createdAt} />
                 </td>
                 <td>
                   {r.email.split("@")[0]} <span className="faint">· {ROLE_LABEL[r.role as Role] ?? r.role}</span>

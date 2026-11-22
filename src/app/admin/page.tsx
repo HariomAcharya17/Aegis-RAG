@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { LocalTime } from "@/components/LocalTime";
 import { TopBar } from "@/components/TopBar";
 import { getSessionUser } from "@/lib/auth";
 import { numberEnv } from "@/lib/env";
@@ -150,7 +151,7 @@ export default async function AdminPage() {
                 {logs.slice(0, 100).map((l) => (
                   <tr key={l.id}>
                     <td className="faint" style={{ whiteSpace: "nowrap" }}>
-                      {new Date(l.created_at).toLocaleString("en-US", { dateStyle: "short", timeStyle: "short" })}
+                      <LocalTime iso={l.created_at} />
                     </td>
                     <td>
                       {DEMO_USERS.find((u) => u.email === l.user_email)?.name ?? l.user_email.split("@")[0]}{" "}

@@ -75,7 +75,10 @@ export function ArenaClient({ defaultHandle }: { defaultHandle: string }) {
       await readEvents(res, (e) => {
         if (e.type === "status") setStatus(String(e.text));
         if (e.type === "error") throw new Error(String(e.message));
-        if (e.type === "result") setResult({ ...(e as unknown as ArenaResult), mode: useMode });
+        if (e.type === "result") {
+          setResult({ ...(e as unknown as ArenaResult), mode: useMode });
+          setStatus(null);
+        }
       });
       router.refresh();
     } catch (err) {
