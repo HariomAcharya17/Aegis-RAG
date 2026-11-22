@@ -473,3 +473,95 @@ table.data tr:last-child td { border-bottom: 0; }
 .login .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 32px; box-shadow: var(--shadow-lg); max-width: 460px; }
 .role-list button { border-left: 3px solid var(--rc, var(--border)); }
 @media (max-width: 560px) { .room-tile .room-name { padding-right: 64px; } }
+
+/* =====================================================================
+   Phone layout: keep everything inside the screen
+   ===================================================================== */
+html, body { overflow-x: clip; }
+.hero { grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr); }
+.hero-copy, .hero-visual { min-width: 0; }
+h1, h2, h3, p, li, td, .answer, .bubble, .duel-q { overflow-wrap: break-word; }
+.answer pre, .answer code { white-space: pre-wrap; word-break: break-word; }
+.source summary { flex-wrap: wrap; }
+.room-head { gap: 8px; flex-wrap: wrap; }
+
+@media (max-width: 960px) {
+  .hero { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 640px) {
+  /* app top bar: wordmark, then nav, then role switcher + sign out on one tidy row */
+  .topbar { row-gap: 8px; }
+  .topbar .nav { order: 3; width: 100%; overflow-x: auto; margin: 0 -6px; scrollbar-width: none; }
+  .topbar .nav::-webkit-scrollbar { display: none; }
+  .topbar .nav a { white-space: nowrap; }
+  .who { gap: 8px; min-width: 0; }
+  .who .role-switch { min-width: 0; }
+  .who .role-switch .select { max-width: 52vw; text-overflow: ellipsis; }
+  .landing .topbar { flex-wrap: nowrap; }
+  .landing .topbar .who { gap: 4px; }
+
+  /* landing */
+  .hero { padding: 32px 16px 48px; gap: 32px; }
+  .hero h1 { font-size: clamp(30px, 9vw, 38px); margin-top: 18px; }
+  .hero-sub { font-size: 16px; margin-top: 16px; }
+  .hero-pill { font-size: 12px; max-width: 100%; }
+  .hero-cta { margin-top: 24px; }
+  .hero-cta > *, .hero-cta form, .hero-cta .btn { flex: 1 1 100%; width: 100%; justify-content: center; }
+  .hero-visual { padding: 14px; }
+  .rooms { gap: 8px; }
+  .room-tile { padding: 12px; padding-top: 36px; }
+  .room-tile .room-status { top: 10px; left: 12px; right: auto; }
+  .room-tile .room-name { padding-right: 0; }
+  .section { padding: 56px 16px; }
+  .section-title { font-size: 26px; }
+  .section-lede { font-size: 15.5px; }
+
+  /* duel: stack prompt above the play button */
+  .duel { margin-top: 24px; }
+  .duel-prompt { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px 12px; padding: 14px 16px; align-items: start; }
+  .duel-prompt > .btn { grid-column: 1 / -1; justify-content: center; }
+  .duel-q { font-size: 14.5px; }
+  .duel-col { padding: 16px; }
+  .duel-col header { flex-wrap: wrap; gap: 4px 10px; }
+  .duel-answer { min-height: 0; }
+  .duel-caption { font-size: 16px; }
+
+  /* explorer */
+  .explorer-rooms { grid-template-columns: minmax(0, 1fr); padding: 14px; gap: 10px; }
+  .room-count { margin-top: 6px; }
+  .explorer-foot { padding: 14px 16px; }
+
+  .three-card, .proof-card { padding: 18px; }
+  .hood-list { padding: 4px 12px 12px; }
+  .stories { grid-template-columns: minmax(0, 1fr); }
+  .stack-chips .chip { white-space: normal; }
+  .footer { padding: 24px 16px 40px; flex-direction: column; }
+
+  /* demo guide becomes a compact bottom sheet */
+  .guide { left: 8px; right: 8px; bottom: 8px; width: auto; padding: 12px 14px; max-height: 46vh; overflow-y: auto; }
+  .guide h3 { font-size: 15.5px; margin: 8px 0 4px; }
+  .guide p { font-size: 13.5px; }
+  .guide-look { margin-top: 8px; }
+  .guide-actions { margin-top: 10px; flex-wrap: wrap; }
+  .guide-pill { right: 12px; bottom: 12px; }
+  html.guide-open .chat-scroll, html.guide-open .page { padding-bottom: 48vh; }
+
+  /* app pages */
+  .page h1 { font-size: 24px; }
+  .stat .value { font-size: 22px; }
+  .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .msg.user .bubble { max-width: 92%; }
+  .login .panel { padding: 22px 18px; }
+  .row > .input, .row > .select { min-width: 0; }
+}
+@media (max-width: 640px) {
+  .segmented { display: flex; width: 100%; }
+  .segmented button { flex: 1; padding: 7px 8px; }
+}
+@media (max-width: 640px) {
+  .topbar .who { order: 2; width: 100%; margin-left: 0; }
+  .topbar .who .role-switch { flex: 1; }
+  .topbar .who .role-switch .select { width: 100%; max-width: none; }
+  .landing .topbar .who { order: 0; width: auto; margin-left: auto; }
+}
