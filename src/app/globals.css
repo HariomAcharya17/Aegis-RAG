@@ -210,3 +210,150 @@ table.data tr:last-child td { border-bottom: 0; }
   .layer { grid-template-columns: 60px 1fr; }
   .layer .d { grid-column: 1 / -1; color: var(--muted); }
 }
+
+/* =====================================================================
+   Shared additions: mark, sr-only, big buttons, chips
+   ===================================================================== */
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.mark { color: var(--accent); align-self: center; margin-right: 2px; }
+.wordmark { align-items: center; }
+.btn.big { padding: 11px 20px; font-size: 15px; border-radius: 10px; }
+.link-btn { background: none; border: 0; padding: 0; color: var(--accent); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; font-size: inherit; }
+.chip { display: inline-flex; align-items: center; padding: 5px 11px; border-radius: 99px; background: var(--surface); border: 1px solid var(--border); font-size: 13px; white-space: nowrap; }
+.chip.ok { background: var(--ok-soft); border-color: color-mix(in srgb, var(--ok) 30%, transparent); }
+.chip.warn { background: var(--danger-soft); border-color: color-mix(in srgb, var(--danger) 30%, transparent); }
+.role-switch .select { width: auto; padding: 5px 10px; font-size: 13px; }
+
+/* ---------- access chips (chat start) ---------- */
+.access-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.access-chip { display: inline-flex; gap: 6px; align-items: center; padding: 5px 12px; border-radius: 8px; font-size: 13.5px; border: 1px solid var(--border); }
+.access-chip.ok { background: var(--ok-soft); color: var(--ok); border-color: color-mix(in srgb, var(--ok) 25%, transparent); }
+.access-chip.no { color: var(--faint); background: var(--surface); text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--faint) 60%, transparent); }
+
+/* ---------- answer trace ---------- */
+.how { margin-top: 12px; }
+.how > summary { cursor: pointer; font-size: 13px; color: var(--muted); list-style: none; display: inline-flex; align-items: center; gap: 6px; }
+.how > summary::-webkit-details-marker { display: none; }
+.how > summary::before { content: "›"; display: inline-block; transition: transform 0.15s; font-size: 15px; }
+.how[open] > summary::before { transform: rotate(90deg); }
+.how > summary:hover { color: var(--text); }
+.trace { list-style: none; margin: 10px 0 0; padding: 0 0 0 4px; display: grid; gap: 0; }
+.trace-step { display: grid; grid-template-columns: 14px 1fr; gap: 10px; position: relative; padding-bottom: 12px; }
+.trace-step:not(:last-child)::after { content: ""; position: absolute; left: 4px; top: 14px; bottom: 0; width: 1px; background: var(--border-strong); }
+.trace-dot { width: 9px; height: 9px; border-radius: 99px; margin-top: 7px; background: var(--faint); }
+.trace-step.pass .trace-dot { background: var(--ok); }
+.trace-step.block .trace-dot { background: var(--danger); }
+.trace-step.flag .trace-dot { background: var(--warn); }
+.trace-head { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; font-size: 14px; }
+.trace-head .o { font-family: var(--mono); font-size: 11.5px; text-transform: uppercase; }
+.trace .muted { margin-top: 1px; }
+
+/* ---------- demo guide panel ---------- */
+.guide {
+  position: fixed; right: 20px; bottom: 20px; z-index: 30; width: min(360px, calc(100vw - 32px));
+  background: var(--surface); border: 1px solid var(--border-strong); border-radius: 14px; padding: 16px 16px 14px;
+  box-shadow: 0 10px 30px -12px rgba(40, 30, 20, 0.25);
+}
+.guide h3 { margin: 10px 0 6px; font-size: 17px; }
+.guide p { color: var(--muted); }
+.guide-top { display: flex; justify-content: space-between; align-items: center; }
+.guide-progress { display: flex; gap: 4px; margin-top: 8px; }
+.guide-progress span { flex: 1; height: 3px; border-radius: 3px; background: var(--border); }
+.guide-progress span.on { background: var(--accent); }
+.guide-actions { margin-top: 14px; gap: 8px; flex-wrap: nowrap; }
+.guide-pill {
+  position: fixed; right: 20px; bottom: 20px; z-index: 30; padding: 9px 16px; border-radius: 99px; cursor: pointer;
+  background: var(--surface); border: 1px solid var(--border-strong); font-size: 13.5px; color: var(--text);
+  box-shadow: 0 6px 20px -10px rgba(40, 30, 20, 0.3);
+}
+.guide-pill:hover { background: var(--surface-2); }
+/* When the guide is open, the page makes room for it instead of hiding under it. */
+@media (min-width: 1100px) {
+  html.guide-open body { padding-right: 390px; }
+}
+@media (max-width: 1099px) {
+  html.guide-open .chat-scroll, html.guide-open .page { padding-bottom: 300px; }
+  html.guide-open .composer { bottom: 0; }
+}
+.table-wrap.scroll { max-height: 560px; overflow: auto; }
+.table-wrap.scroll thead th { position: sticky; top: 0; background: var(--surface); z-index: 1; }
+
+/* =====================================================================
+   Landing page
+   ===================================================================== */
+.landing { min-height: 100vh; }
+.topbar.plain { background: color-mix(in srgb, var(--bg) 92%, transparent); }
+.hero { max-width: 860px; margin: 0 auto; padding: 96px 24px 72px; text-align: center; }
+.eyebrow { font-size: 13px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--accent); margin-bottom: 18px; }
+.hero h1 { text-wrap: balance; max-width: 18ch; margin: 0 auto; font-size: clamp(34px, 6vw, 56px); line-height: 1.08; letter-spacing: -0.02em; }
+.hero-sub { font-size: 18px; color: var(--muted); max-width: 640px; margin: 22px auto 0; line-height: 1.6; }
+.hero-sub em { font-style: italic; color: var(--text); }
+.section { max-width: 1040px; margin: 0 auto; padding: 56px 24px; border-top: 1px solid var(--border); }
+.section-title { font-size: clamp(24px, 3.4vw, 32px); }
+.section-lede { color: var(--muted); margin-top: 8px; max-width: 64ch; font-size: 16px; }
+
+.compare { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 28px; }
+.compare-card { border-radius: 14px; padding: 22px; border: 1px solid var(--border); background: var(--surface); }
+.compare-card h3 { font-size: 19px; margin: 6px 0 14px; }
+.compare-card.bad { background: linear-gradient(var(--surface), var(--surface)) padding-box; }
+.compare-card.good { border-color: color-mix(in srgb, var(--ok) 35%, var(--border)); }
+.compare-label { font-size: 12.5px; text-transform: uppercase; letter-spacing: 0.04em; }
+.compare-card.bad .compare-label { color: var(--danger); }
+.compare-card.good .compare-label { color: var(--ok); }
+.compare-card p.muted { margin-top: 14px; font-size: 14.5px; }
+.mini-flow { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 12px; background: var(--surface-2); border-radius: 10px; }
+.mini-flow .arrow { color: var(--faint); }
+
+.journey { list-style: none; padding: 0; margin: 28px 0 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; counter-reset: j; }
+.journey li { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; }
+.journey li.key { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.journey h3 { font-size: 16.5px; margin: 8px 0 4px; }
+.journey-n { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 99px; background: var(--surface-2); font-size: 12.5px; font-family: var(--mono); }
+.journey li.key .journey-n { background: var(--accent); color: var(--accent-ink); }
+.journey-tech { font-size: 11.5px; color: var(--faint); margin-top: 10px; }
+
+.explorer { margin-top: 26px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+.explorer-people { display: flex; gap: 6px; padding: 12px; border-bottom: 1px solid var(--border); overflow-x: auto; background: var(--surface-2); }
+.person { display: flex; gap: 10px; align-items: center; padding: 8px 12px 8px 8px; border-radius: 10px; border: 1px solid transparent; background: transparent; cursor: pointer; text-align: left; white-space: nowrap; }
+.person > span:last-child { display: grid; line-height: 1.3; }
+.person:hover { background: var(--surface); }
+.person.on { background: var(--surface); border-color: var(--border-strong); }
+.avatar { display: inline-grid; place-items: center; width: 32px; height: 32px; border-radius: 99px; background: var(--accent-soft); color: var(--accent); font-size: 12.5px; font-weight: 500; }
+.explorer-rooms { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; padding: 16px; }
+.room { border-radius: 10px; padding: 14px; border: 1px solid var(--border); transition: opacity 0.2s, border-color 0.2s, background 0.2s; }
+.room.open { background: var(--ok-soft); border-color: color-mix(in srgb, var(--ok) 30%, transparent); }
+.room.locked { opacity: 0.55; background: repeating-linear-gradient(135deg, transparent 0 8px, color-mix(in srgb, var(--border) 45%, transparent) 8px 9px); }
+.room-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.room-state { font-size: 12px; font-family: var(--mono); text-transform: uppercase; }
+.room.open .room-state { color: var(--ok); }
+.room.locked .room-state { color: var(--faint); }
+.room-count { font-family: var(--serif); font-size: 24px; margin-top: 8px; font-variant-numeric: tabular-nums; }
+.explorer-foot { padding: 14px 18px 18px; border-top: 1px solid var(--border); }
+
+.proof { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 24px; }
+.proof-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px; display: grid; gap: 10px; align-content: start; }
+.proof-stats { display: grid; gap: 10px; margin-top: 4px; }
+.proof-stats > div { display: grid; }
+.big-num { font-family: var(--serif); font-size: 30px; line-height: 1.1; color: var(--danger); font-variant-numeric: tabular-nums; }
+.big-num.ok { color: var(--ok); }
+.checklist { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
+.checklist li::before { content: "✓"; color: var(--ok); margin-right: 8px; }
+
+.demo-steps { margin: 22px 0 0; padding-left: 22px; display: grid; gap: 10px; font-size: 15.5px; max-width: 70ch; }
+.demo-steps li::marker { color: var(--accent); font-family: var(--mono); }
+.stack-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+.footer { max-width: 1040px; margin: 0 auto; padding: 28px 24px 48px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: 13.5px; color: var(--muted); }
+.footer span { display: inline-flex; gap: 6px; align-items: center; }
+
+@media (max-width: 860px) {
+  .compare, .proof { grid-template-columns: 1fr; }
+  .journey { grid-template-columns: 1fr 1fr; }
+  .explorer-rooms { grid-template-columns: 1fr 1fr; }
+  .topbar.plain .nav { display: none; }
+}
+@media (max-width: 560px) {
+  .hero { padding: 64px 16px 48px; }
+  .section { padding: 44px 16px; }
+  .journey { grid-template-columns: 1fr; }
+  .guide { right: 16px; bottom: 16px; }
+}

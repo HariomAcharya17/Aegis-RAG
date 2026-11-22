@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Answer, readEvents } from "@/components/Answer";
+import { LayerTrace, type Layer } from "@/components/LayerTrace";
 import { DEPARTMENT_LABEL, ROLE_DEPARTMENTS, ROLE_LABEL, type Department, type Role } from "@/lib/roles";
 
 type Citation = { n: number; id: string; title: string; department: string; content: string; similarity: number };
@@ -12,6 +13,7 @@ type Result = {
   restricted: { department: string; matches: number }[];
   blockedBy: string | null;
   tools: { name: string; rows: number }[];
+  layers: Layer[];
   latencyMs: number;
   usage?: { input: number; output: number };
   costUsd?: number;
@@ -38,6 +40,20 @@ export function ChatClient({
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [messages, status]);
+
+  // The demo guide asks questions for the visitor: via an event on this page,
+  // or via ?ask= when it navigates here from another page.
+  const askRef = useRef<(q: string) => void>(() => {});
+  useEffect(() => {
+    const onAsk = (e: Event) => askRef.current((e as CustomEvent<string>).detail);
+    window.addEventListener("aegis:ask", onAsk);
+    const q = new URLSearchParams(window.location.search).get("ask");
+    if (q) {
+      window.history.replaceState(null, "", "/chat");
+      setTimeout(() => askRef.current(q), 0);
+    }
+    return () => window.removeEventListener("aegis:ask", onAsk);
+  }, []);
 
   async function ask(question: string) {
     const q = question.trim();
@@ -75,7 +91,7 @@ export function ChatClient({
     }
   }
 
-  const readable = ROLE_DEPARTMENTS[role].map((d) => DEPARTMENT_LABEL[d]).join(", ");
+  askRef.current = ask;
 
   return (
     <main className="chat">
@@ -85,7 +101,20 @@ export function ChatClient({
             <div style={{ paddingTop: "8vh" }}>
               <h1>Good to see you, {firstName}.</h1>
               <p className="lede" style={{ marginTop: 8 }}>
-                You&apos;re signed in as {ROLE_LABEL[role]}, so I can read: {readable}. Ask about anything in there.
+                You&apos;re signed in as {ROLE_LABEL[role]}. Here&apos;s what the database will let me read for you:
+              </p>
+              <div className="access-row" aria-label="Your access">
+                {(["general", "finance", "hr", "marketing"] as Department[]).map((d) => {
+                  const ok = ROLE_DEPARTMENTS[role].includes(d);
+                  return (
+                    <span key={d} className={`access-chip ${ok ? "ok" : "no"}`}>
+                      <span aria-hidden>{ok ? "✓" : "×"}</span> {DEPARTMENT_LABEL[d]}
+                    </span>
+                  );
+                })}
+              </div>
+              <p className="small faint" style={{ marginTop: 10 }}>
+                Try one of these, or ask something you shouldn&apos;t be able to see.
               </p>
               <div className="suggestions">
                 {suggestions.map((s) => (
@@ -197,6 +226,13 @@ function AssistantMessage({ msg, showDiagnostics, lastQuestion }: { msg: Msg; sh
       )}
 
       {withheld.length > 0 && <RestrictedNotice withheld={withheld} question={lastQuestion} />}
+
+      {r.layers?.length > 0 && (
+        <details className="how">
+          <summary>How this answer was made</summary>
+          <LayerTrace layers={r.layers} />
+        </details>
+      )}
 
       <div className="meta-line">
         {r.tools.length > 0 && <span>Queried {r.tools.map((t) => t.name.replace(/_/g, " ")).join(", ")}</span>}

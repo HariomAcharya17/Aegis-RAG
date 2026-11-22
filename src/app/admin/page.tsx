@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { TopBar } from "@/components/TopBar";
 import { getSessionUser } from "@/lib/auth";
 import { numberEnv } from "@/lib/env";
+import { DEMO_USERS, ROLE_LABEL, type Role } from "@/lib/roles";
 import { RequestsTable, ViewAs } from "./AdminClient";
 
 export const dynamic = "force-dynamic";
@@ -80,7 +81,7 @@ export default async function AdminPage() {
     reason: r.reason,
     question: r.question,
     status: r.status,
-    email: r.requester?.email ?? "unknown",
+    email: DEMO_USERS.find((u) => u.email === r.requester?.email)?.name ?? r.requester?.email ?? "unknown",
     role: r.requester?.role ?? "",
   }));
 
@@ -132,7 +133,7 @@ export default async function AdminPage() {
         <section className="stack" style={{ marginTop: 32 }}>
           <h2>Audit log</h2>
           <p className="muted small">Questions are stored with personal data redacted. Rows are written with the service key; no user can insert or edit them.</p>
-          <div className="table-wrap card" style={{ padding: 0 }}>
+          <div className="table-wrap scroll card" style={{ padding: 0 }}>
             <table className="data">
               <thead>
                 <tr>
@@ -146,13 +147,14 @@ export default async function AdminPage() {
                 </tr>
               </thead>
               <tbody>
-                {logs.slice(0, 50).map((l) => (
+                {logs.slice(0, 100).map((l) => (
                   <tr key={l.id}>
                     <td className="faint" style={{ whiteSpace: "nowrap" }}>
                       {new Date(l.created_at).toLocaleString("en-US", { dateStyle: "short", timeStyle: "short" })}
                     </td>
                     <td>
-                      {l.user_email.split("@")[0]} <span className="faint">({l.role})</span>
+                      {DEMO_USERS.find((u) => u.email === l.user_email)?.name ?? l.user_email.split("@")[0]}{" "}
+                      <span className="faint">· {ROLE_LABEL[l.role as Role] ?? l.role}</span>
                     </td>
                     <td>{l.surface}</td>
                     <td className="muted" style={{ maxWidth: 380 }}>

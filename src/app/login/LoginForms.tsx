@@ -14,7 +14,7 @@ export function LoginForms({ demo, users }: { demo: boolean; users: DemoUser[] }
     <>
       {demo && (
         <form action={demoAction} className="stack" style={{ marginTop: 24 }}>
-          <p className="small muted">Sign in as one of the demo staff:</p>
+          
           <div className="role-list">
             {users.map((u) => (
               <button key={u.role} type="submit" name="role" value={u.role} disabled={demoPending}>

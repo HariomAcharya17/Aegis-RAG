@@ -638,3 +638,22 @@ grant execute on function public.view_as_search(text, text, vector, int) to auth
 grant execute on function public.decide_access_request(bigint, boolean, int) to authenticated;
 grant execute on function public.hybrid_search(text, vector, int, int) to authenticated;
 grant execute on function public.search_departments(text[], text, vector, int, int) to service_role;
+
+-- ---------------------------------------------------------------------
+-- 9. Table privileges. Newer Supabase projects don't auto-grant API
+--    access to tables created in SQL. Grants say which tables a role may
+--    touch at all; RLS (above) still decides which ROWS it sees.
+--    anon gets nothing. canaries is service-role only.
+-- ---------------------------------------------------------------------
+grant usage on schema public to anon, authenticated, service_role;
+
+grant all on all tables in schema public to service_role;
+grant usage, select on all sequences in schema public to service_role;
+
+grant select on
+  public.profiles, public.role_permissions, public.access_grants, public.access_requests,
+  public.documents, public.chunks, public.employees, public.finance_quarterly,
+  public.marketing_campaigns, public.audit_logs, public.redteam_attempts, public.eval_cases
+to authenticated;
+grant insert on public.access_requests to authenticated;
+grant usage, select on sequence public.access_requests_id_seq to authenticated;

@@ -26,6 +26,10 @@ export type ChatRequest = {
   temperature?: number;
   max_tokens?: number;
   json?: boolean;
+  /** "required" forces at least one tool call. */
+  toolChoice?: "auto" | "required";
+  /** Retries on HTTP 429 (default 2). Use 0 when a fallback model exists. */
+  maxRetries?: number;
 };
 
 export type Usage = { input: number; output: number };
@@ -47,12 +51,13 @@ export async function groqChat(req: ChatRequest): Promise<ChatResponse> {
   };
   if (req.tools?.length) {
     body.tools = req.tools;
-    body.tool_choice = "auto";
+    body.tool_choice = req.toolChoice ?? "auto";
   }
   if (req.json) body.response_format = { type: "json_object" };
   if (req.model.startsWith("openai/gpt-oss")) body.reasoning_effort = "low";
 
-  for (let attempt = 0; attempt < 3; attempt++) {
+  const maxRetries = req.maxRetries ?? 2;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
     const res = await fetch(ENDPOINT, {
       method: "POST",
       headers: {
@@ -63,10 +68,10 @@ export async function groqChat(req: ChatRequest): Promise<ChatResponse> {
       signal: AbortSignal.timeout(45_000),
     });
 
-    if (res.status === 429 && attempt < 2) {
-      // Free tier rate limit. Respect Retry-After but never stall a request for long.
+    if (res.status === 429 && attempt < maxRetries) {
+      // Free tier rate limit. Respect Retry-After, capped so a request never stalls for long.
       const retryAfter = Number(res.headers.get("retry-after") ?? "2");
-      await new Promise((r) => setTimeout(r, Math.min(Math.max(retryAfter, 1), 6) * 1000));
+      await new Promise((r) => setTimeout(r, Math.min(Math.max(retryAfter, 1), 8) * 1000));
       continue;
     }
     if (!res.ok) {

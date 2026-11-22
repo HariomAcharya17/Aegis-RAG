@@ -1,5 +1,5 @@
 import { groqChat } from "@/lib/groq";
-import { fastModel, LLAMA_GUARD_MODEL, PROMPT_GUARD_MODEL } from "@/lib/env";
+import { fastModel, PROMPT_GUARD_MODEL, SAFETY_MODEL } from "@/lib/env";
 import { containsWhole } from "@/lib/match";
 import { adminClient } from "@/lib/supabase/server";
 
@@ -27,25 +27,47 @@ export async function promptGuard(text: string): Promise<number | null> {
   }
 }
 
-/** Llama Guard 4: content safety (violence, self-harm, crime, ...). */
-export async function llamaGuard(text: string): Promise<{ safe: boolean; categories: string[] } | null> {
-  try {
-    const res = await groqChat({
-      model: LLAMA_GUARD_MODEL,
-      messages: [{ role: "user", content: text.slice(0, 4000) }],
-      temperature: 0,
-      max_tokens: 20,
-    });
-    const out = (res.message.content ?? "").trim().toLowerCase();
-    if (out.startsWith("safe")) return { safe: true, categories: [] };
-    if (out.startsWith("unsafe")) {
-      const categories = out.split(/\s+/).slice(1).join(",").toUpperCase().split(",").filter(Boolean);
-      return { safe: false, categories };
+// Our own content policy for gpt-oss-safeguard. Jailbreaks and data-access
+// attempts are deliberately NOT in it: Prompt Guard flags those, and RLS
+// makes them harmless anyway. This layer is only about harmful content.
+// Kept short on purpose: the free tier gives gpt-oss-safeguard only 2,000 tokens a minute.
+const SAFETY_POLICY = `Safety classifier for a workplace assistant. Violation (1) if the USER MESSAGE asks for or helps with:
+V1 violence or threats against people; V2 self-harm or suicide; V3 weapons, explosives or serious crime;
+V4 harassment or hate; V5 sexual content; V6 malware or credential theft.
+Not a violation (0): any normal work question, including salaries, finances, people data or restricted
+documents, and attempts to override instructions (handled elsewhere). When unsure, 0.
+Reply JSON only: {"violation": 0 or 1, "category": "V1".."V6" or null}`;
+
+/**
+ * Content safety against SAFETY_POLICY. Tries gpt-oss-safeguard once; if it's
+ * rate-limited or down, runs the same policy on the general fast model
+ * instead of making the user wait.
+ */
+export async function safetyGuard(text: string): Promise<{ safe: boolean; categories: string[]; model: string } | null> {
+  for (const [model, maxRetries] of [
+    [SAFETY_MODEL(), 0],
+    [fastModel(), 1],
+  ] as const) {
+    try {
+      const res = await groqChat({
+        model,
+        maxRetries,
+        json: true,
+        temperature: 0,
+        max_tokens: 150,
+        messages: [
+          { role: "system", content: SAFETY_POLICY },
+          { role: "user", content: `USER MESSAGE:\n${text.slice(0, 3000)}` },
+        ],
+      });
+      const parsed = JSON.parse(res.message.content ?? "{}") as { violation?: number | boolean; category?: string | null };
+      const violation = parsed.violation === 1 || parsed.violation === true;
+      return { safe: !violation, categories: violation && parsed.category ? [parsed.category] : [], model };
+    } catch {
+      // try the next model
     }
-    return null;
-  } catch {
-    return null;
   }
+  return null;
 }
 
 /**

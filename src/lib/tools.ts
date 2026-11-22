@@ -16,7 +16,7 @@ const TOOLS: ToolSpec[] = [
       function: {
         name: "employee_stats",
         description:
-          "Aggregate workforce statistics from the HR database: headcount, average monthly income, attrition rate, overtime rate, average tenure. Grouped by one dimension.",
+          "The authoritative source for workforce numbers. Use it for ANY question about how many people/employees work somewhere, average pay, attrition or overtime rates, or tenure. Returns headcount, average monthly income, attrition rate, overtime rate and average tenure, grouped by department, job_role, job_level or gender.",
         parameters: {
           type: "object",
           properties: {
@@ -49,7 +49,7 @@ const TOOLS: ToolSpec[] = [
       function: {
         name: "finance_summary",
         description:
-          "Revenue, profit, margin and order count from the finance ledger (years 2022-2025). Optional filters; results grouped by one dimension.",
+          "The authoritative source for finance numbers: revenue, profit, margin and order count from the ledger (years 2022-2025). Use it for any total, comparison or breakdown. Optional filters; results grouped by one dimension.",
         parameters: {
           type: "object",
           properties: {

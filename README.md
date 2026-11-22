@@ -6,11 +6,13 @@ retrieval before the model is called. Jailbreaks have nothing to leak.
 
 Built entirely on free tiers: Vercel, Supabase, Groq, Gemini embeddings, Langfuse, GitHub Actions.
 
+- **Landing page + guided demo**: a plain-language explainer at `/` and a step-by-step demo panel with one-click persona switching, so anyone can understand the idea in 3 minutes
 - **Assistant**: hybrid search (pgvector + full text), typed tools over HR / finance / marketing tables, citations, follow-up rewriting
-- **Guardrails**: Llama Prompt Guard 2, Llama Guard 4, out-of-scope detection, PII redaction, canary-token leak scan, ingestion-time injection scan
+- **Guardrails**: Llama Prompt Guard 2, a written safety policy run by gpt-oss-safeguard, out-of-scope detection, PII redaction, canary-token leak scan, ingestion-time injection scan
 - **Red team arena**: attack a prompt-only design and the database-enforced design side by side; successful attacks become regression tests
-- **Access requests**: "2 HR sections match, request access?" with executive approval and 24h expiring grants
+- **Access requests**: "2 HR sections match, request access?" with executive approval and expiring grants (1 hour in the demo)
 - **Admin**: audit log, shadow cost, p95 latency, "view as role" retrieval comparison
+- **Answer trace**: every answer shows "How this answer was made", each safety layer and what it decided
 - **Eval gate**: every Vercel deployment is replayed against the eval suite in GitHub Actions; leakage must be 0
 
 Read `CASE_STUDY.txt` for the full walkthrough of how and why it works.
@@ -68,7 +70,7 @@ notebooks/kestrel_ingest.ipynb   Kaggle data to documents, chunks, embeddings, e
 scripts/load_data.py         pickles into Supabase
 scripts/seed_users.py        five demo accounts with roles
 src/lib/pipeline.ts          the request pipeline: guards, retrieval, tools, output checks
-src/lib/guardrails.ts        Prompt Guard, Llama Guard, scope check, canaries
+src/lib/guardrails.ts        Prompt Guard, safety policy, scope check, canaries
 src/lib/tools.ts             typed tools the model can call
 src/lib/observability.ts     shadow cost, Langfuse traces, Discord alerts
 src/app/api/*                chat, arena, access requests, admin, daily cron
@@ -80,5 +82,5 @@ evals/run-evals.ts           eval gate (leakage, refusal, correctness, faithfuln
 - Vercel Hobby is for non-commercial use, which suits a portfolio demo.
 - Supabase pauses free projects after a week without activity. The daily cron touches the database, which prevents that.
 - The Groq free tier has per-minute limits. The app retries briefly, rate-limits each user (12 requests a minute by default), and the eval runner waits between cases.
-- If an executive grants a demo account temporary access, the leak tests for that role will fail until the grant expires (24h), because the evals assume the base permissions.
+- While a demo account has a temporary grant (1 hour), the eval runner skips that role's refusal tests and says so.
 - All people, emails and phone numbers are synthetic (`kestrel.example.com` is a reserved domain).

@@ -16,3 +16,7 @@ data/
 __pycache__/
 .venv/
 .DS_Store
+
+# generated locally
+AGENTS.md
+evals/last-report.json

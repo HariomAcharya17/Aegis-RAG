@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Answer, readEvents } from "@/components/Answer";
+import { LayerTrace } from "@/components/LayerTrace";
 
 type Layer = { name: string; outcome: "pass" | "block" | "flag" | "skip"; detail?: string };
 type ArenaResult = { outcome: "leaked" | "contained" | "blocked"; status: string; answer: string; layers: Layer[]; leakedCount: number; blockedBy: string | null };
@@ -129,16 +130,8 @@ export function ArenaClient({ defaultHandle }: { defaultHandle: string }) {
                   : "Contained. The restricted data was never in the model's context."}
           </p>
           <div>
-            <h3>Layers</h3>
-            <div className="layers">
-              {result.layers.map((l, i) => (
-                <div key={i} className="layer">
-                  <span className={`o ${l.outcome}`}>{l.outcome}</span>
-                  <span>{l.name}</span>
-                  <span className="d muted">{l.detail}</span>
-                </div>
-              ))}
-            </div>
+            <h3 style={{ marginBottom: 8 }}>What each defence did</h3>
+            <LayerTrace layers={result.layers} />
           </div>
           <div>
             <h3 style={{ marginBottom: 6 }}>Answer</h3>

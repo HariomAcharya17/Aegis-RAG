@@ -95,9 +95,10 @@ This mapping lives in a database table (role_permissions), so changing access ne
                                                                               every query, cannot be skipped
   Supabase Auth              Sign-in, JWTs that RLS reads (auth.uid())        Ties identity to the database
   Groq: gpt-oss-120b         Answers and tool calling                         Fast, free tier
-  Groq: llama-3.1-8b         Follow-up rewriting, out-of-scope check          Cheap small model for small jobs
+  Groq: gpt-oss-20b          Follow-up rewriting, out-of-scope check          Cheap small model for small jobs
   Groq: Llama Prompt Guard 2 Jailbreak / injection detection (input, docs)    Purpose-built classifier, free
-  Groq: Llama Guard 4        Content safety classification (input)            Purpose-built classifier, free
+  Groq: gpt-oss-safeguard    Content safety against our own written policy    Policy is ours to edit; free
+                             (Groq retired Llama Guard 4 in 2026)
   Gemini embedding-001       Embeddings, 768 dimensions                       Free, strong retrieval quality,
                                                                               asymmetric query/document modes
   Google Colab               One-off data build and embedding                 Free compute, no local setup
@@ -186,7 +187,11 @@ What happens when Priya (finance) asks "Which region had the highest revenue in 
 
 3. Input guards, run in parallel:
    - Llama Prompt Guard 2 returns an injection probability. At 0.9 or above, the request is blocked.
-   - Llama Guard 4 classifies content safety. If unsafe, the request is blocked.
+   - gpt-oss-safeguard-20b classifies the message against a short written safety policy. The free tier gives
+     that model only 2,000 tokens a minute (about 3 checks), so if it is rate-limited the same policy runs on
+     gpt-oss-20b instead of making the user wait. The policy covers violence, self-harm, serious crime,
+     harassment, sexual content and malware. On a violation, the request is blocked.
+     Data-access attempts are deliberately left out of that policy: they're Prompt Guard's and RLS's job.
    Guards fail OPEN: if Groq's guard model is down, the request continues and the layer is recorded as
    "skip". That's acceptable only because the guards are not the security boundary. RLS is, and RLS
    never fails open.
@@ -201,6 +206,10 @@ What happens when Priya (finance) asks "Which region had the highest revenue in 
      Finance chunks. Vector ranking and keyword ranking are merged with Reciprocal Rank Fusion
      (score = 1/(50 + vector rank) + 1/(50 + keyword rank)). Vectors catch meaning ("staff turnover" finds
      "attrition"); keywords catch exact codes and names that embeddings blur.
+   - Retrieval fetches 24 candidates and keeps at most 2 chunks per document family, then the best 6.
+     Without this, 20 near-identical payroll pages crowd out the one summary report that actually answers
+     "how many people work in R&D?" (found by the eval suite: the model counted 42 retrieved names
+     instead of reporting 961).
    - At the same time, call restricted_matches(): a SECURITY DEFINER function that returns only COUNTS of
      relevant chunks in departments the user can't read. Content never leaves. This powers the "2 HR
      sections match this question but are outside your access. Request access?" notice.
@@ -215,6 +224,10 @@ What happens when Priya (finance) asks "Which region had the highest revenue in 
    text as data and not instructions, never invent numbers), the numbered sources, and the TOOLS the role is
    allowed to use. Finance gets finance_summary; HR gets employee_stats and find_employee; Marketing gets
    campaign_performance. The tool loop runs up to 3 rounds, then a final answer.
+   For count/total/average/rate questions there is first a short "tool planning" call that sees only the
+   question and the tools. With documents already in context, gpt-oss tended to skip the tools and count
+   rows in the excerpts, even with tool_choice=required. Seeing the question alone, it reliably calls the
+   right tool, and the results are added before the answering call.
 
 8. Output guards. The whole answer is checked before any of it is sent, which is why it is not streamed
    token by token (progress steps are streamed instead):
@@ -281,7 +294,7 @@ When restricted matches exist, the user can request access with a reason. The ro
 user's own client, and the RLS insert policy forces user_id = auth.uid(), so nobody can file a request as
 someone else. Executives see pending requests in /admin and approve or deny with decide_access_request(),
 a SQL function that checks is_executive() itself. The API check is a convenience; the database check is the
-rule. Approval inserts an access_grants row that expires after 24 hours (capped at 7 days).
+rule. Approval inserts an access_grants row that expires after 1 hour in the demo (the function accepts 1 to 168 hours).
 allowed_departments() includes unexpired grants, so access appears and disappears with no code change.
 
 
@@ -303,7 +316,7 @@ then:
 Make the check required in branch protection and a pull request that breaks retrieval, weakens a policy, or
 makes answers worse can't be merged. The metric definitions follow Ragas (answer correctness,
 faithfulness); they are implemented as LLM-judge prompts to keep CI to a single Node toolchain. The judge
-is a different model (llama-3.3-70b) from the one answering (gpt-oss-120b), to avoid a model grading
+is a different model family (Qwen 3.8 27B) from the one answering (gpt-oss-120b), to avoid a model grading
 itself.
 
 
@@ -368,12 +381,17 @@ stubbed Supabase auth schema. These were confirmed:
 14. HOW TO DEMO IT IN FIVE MINUTES
 ----------------------------------
 
+The app has this built in: the landing page (/) explains the idea in plain language, and "Start the guided
+demo" signs you in as Sam and opens a step-by-step panel that switches personas and asks the questions for
+you. Approved access lasts one hour in the demo, so the next visitor starts fresh.
+
+
 1. Sign in as Sam (employee). Ask "How many PTO days do I get?". You get an answer with a citation.
 2. Still as Sam, ask "What was total profit in 2025?". It refuses, with "Finance sections match, request
    access". Send a request.
 3. Sign in as Elena (executive). Open Admin: see Sam's request, the audit log and the shadow cost. Use "View as
    role" with a salary question to see each role's retrieval side by side. Approve Sam's request.
-4. Back as Sam, ask again. Now it answers, for the next 24 hours.
+4. Back as Sam, ask again. Now it answers, for the next hour.
 5. Open Red team. Run starter attack #1 against Prompt-only. It will often leak salaries. Switch to
    Database-enforced and run the same attack: contained, with the layer trace showing restricted chunks
    "never left the database".

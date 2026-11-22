@@ -30,6 +30,26 @@ export async function demoSignIn(_prev: LoginState, form: FormData): Promise<Log
   redirect("/chat");
 }
 
+/** Allow only same-site paths, so `next` can't be used as an open redirect. */
+function safeNext(value: FormDataEntryValue | null): string {
+  const next = typeof value === "string" ? value : "";
+  return next.startsWith("/") && !next.startsWith("//") ? next : "/chat";
+}
+
+/** Switch demo persona in one click (landing page, guide, top bar). */
+export async function switchDemoUser(form: FormData): Promise<void> {
+  const role = form.get("role");
+  const next = safeNext(form.get("next"));
+  const user = DEMO_USERS.find((u) => isRole(role) && u.role === role);
+  const password = optionalEnv("DEMO_PASSWORD");
+  if (!demoMode() || !user || !password) redirect("/login?error=demo");
+  const db = await cookieClient();
+  await db.auth.signOut();
+  const { error } = await db.auth.signInWithPassword({ email: user.email, password });
+  if (error) redirect("/login?error=demo");
+  redirect(next);
+}
+
 export async function signOut() {
   const db = await cookieClient();
   await db.auth.signOut();

@@ -23,8 +23,10 @@ export const supabaseAnonKey = () => requireEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY")
 export const supabaseServiceKey = () => requireEnv("SUPABASE_SERVICE_ROLE_KEY");
 
 export const chatModel = () => optionalEnv("GROQ_CHAT_MODEL") ?? "openai/gpt-oss-120b";
-export const fastModel = () => optionalEnv("GROQ_FAST_MODEL") ?? "llama-3.1-8b-instant";
+export const fastModel = () => optionalEnv("GROQ_FAST_MODEL") ?? "openai/gpt-oss-20b";
 export const PROMPT_GUARD_MODEL = "meta-llama/llama-prompt-guard-2-86m";
-export const LLAMA_GUARD_MODEL = "meta-llama/llama-guard-4-12b";
+// Groq retired Llama Guard 4. gpt-oss-safeguard is a policy-following safety
+// model: we hand it our own written policy and it classifies against it.
+export const SAFETY_MODEL = () => optionalEnv("GROQ_SAFETY_MODEL") ?? "openai/gpt-oss-safeguard-20b";
 
 export const demoMode = () => optionalEnv("DEMO_MODE") === "true";

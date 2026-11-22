@@ -26,7 +26,7 @@ export function RequestsTable({ requests }: { requests: Request[] }) {
     const res = await fetch("/api/admin/decide", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ id, approve, hours: 24 }),
+      body: JSON.stringify({ id, approve, hours: 1 }),
     });
     if (!res.ok) setError(((await res.json().catch(() => ({}))) as { error?: string }).error ?? "Failed");
     setBusy(null);
@@ -56,7 +56,7 @@ export function RequestsTable({ requests }: { requests: Request[] }) {
                   {new Date(r.createdAt).toLocaleString("en-US", { dateStyle: "short", timeStyle: "short" })}
                 </td>
                 <td>
-                  {r.email.split("@")[0]} <span className="faint">({ROLE_LABEL[r.role as Role] ?? r.role})</span>
+                  {r.email.split("@")[0]} <span className="faint">· {ROLE_LABEL[r.role as Role] ?? r.role}</span>
                 </td>
                 <td>
                   <span className={`tag ${r.department}`}>{DEPARTMENT_LABEL[r.department as Department]}</span>
@@ -69,7 +69,7 @@ export function RequestsTable({ requests }: { requests: Request[] }) {
                   {r.status === "pending" ? (
                     <div className="row" style={{ gap: 6 }}>
                       <button className="btn small primary" disabled={busy === r.id} onClick={() => decide(r.id, true)}>
-                        Grant 24h
+                        Grant 1 hour
                       </button>
                       <button className="btn small" disabled={busy === r.id} onClick={() => decide(r.id, false)}>
                         Deny
