@@ -1,0 +1,50 @@
+name: RAG evals
+
+# Vercel reports each deployment to GitHub. When one succeeds, replay the
+# eval suite against that exact URL. Make this check "required" in branch
+# protection and a pull request that leaks data or breaks answers can't merge.
+on:
+  deployment_status:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: "Deployment URL to test, e.g. https://your-app.vercel.app"
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: evals-${{ github.event.deployment_status.environment_url || inputs.base_url }}
+  cancel-in-progress: true
+
+jobs:
+  evals:
+    if: github.event_name == 'workflow_dispatch' || github.event.deployment_status.state == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Run evals
+        run: npm run evals
+        env:
+          BASE_URL: ${{ github.event.deployment_status.environment_url || inputs.base_url }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          DEMO_PASSWORD: ${{ secrets.DEMO_PASSWORD }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-report
+          path: evals/last-report.json
+          if-no-files-found: ignore

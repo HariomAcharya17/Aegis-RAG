@@ -1,0 +1,37 @@
+"use server";
+
+import { redirect } from "next/navigation";
+import { demoMode, optionalEnv } from "@/lib/env";
+import { DEMO_USERS, isRole } from "@/lib/roles";
+import { cookieClient } from "@/lib/supabase/server";
+
+export type LoginState = { error?: string };
+
+export async function signIn(_prev: LoginState, form: FormData): Promise<LoginState> {
+  const email = String(form.get("email") ?? "").trim();
+  const password = String(form.get("password") ?? "");
+  if (!email || !password) return { error: "Enter your email and password." };
+  const db = await cookieClient();
+  const { error } = await db.auth.signInWithPassword({ email, password });
+  if (error) return { error: "That email and password don't match an account." };
+  redirect("/chat");
+}
+
+/** One-click demo login. The shared password never reaches the browser. */
+export async function demoSignIn(_prev: LoginState, form: FormData): Promise<LoginState> {
+  if (!demoMode()) return { error: "Demo sign-in is turned off." };
+  const role = form.get("role");
+  const user = DEMO_USERS.find((u) => isRole(role) && u.role === role);
+  const password = optionalEnv("DEMO_PASSWORD");
+  if (!user || !password) return { error: "Demo accounts aren't configured." };
+  const db = await cookieClient();
+  const { error } = await db.auth.signInWithPassword({ email: user.email, password });
+  if (error) return { error: `Couldn't sign in as ${user.name}. Has scripts/seed_users.py been run?` };
+  redirect("/chat");
+}
+
+export async function signOut() {
+  const db = await cookieClient();
+  await db.auth.signOut();
+  redirect("/login");
+}
