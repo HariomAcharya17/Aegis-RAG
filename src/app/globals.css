@@ -122,6 +122,18 @@ code, .mono { font-family: var(--mono); font-size: 0.88em; }
 .btn.ghost { border-color: transparent; background: transparent; color: var(--muted); }
 .btn.ghost:hover { color: var(--text); background: var(--surface-2); }
 .btn.small { padding: 4px 10px; font-size: 13px; }
+.btn[aria-busy="true"], .story-item[aria-busy="true"] { cursor: progress; }
+
+/* Pending indicator for buttons and route loading screens */
+.spinner {
+  display: inline-block; width: 12px; height: 12px; flex: none;
+  border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 2s; } }
+.route-loading { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 14px; padding-top: 48px; justify-content: center; }
+.route-loading .spinner { width: 16px; height: 16px; }
 .input, .textarea, .select {
   width: 100%; padding: 9px 12px; border-radius: 8px;
   border: 1px solid var(--border-strong); background: var(--surface);
@@ -235,6 +247,7 @@ table.data tr:last-child td { border-bottom: 0; }
 .chip.ok { background: var(--ok-soft); border-color: color-mix(in srgb, var(--ok) 30%, transparent); }
 .chip.warn { background: var(--danger-soft); border-color: color-mix(in srgb, var(--danger) 30%, transparent); }
 .role-switch .select { width: auto; padding: 5px 10px; font-size: 13px; }
+.role-switch { display: flex; align-items: center; gap: 8px; }
 
 /* ---------- access chips (chat start) ---------- */
 .access-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }

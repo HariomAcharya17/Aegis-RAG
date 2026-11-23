@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { demoMode, optionalEnv } from "@/lib/env";
+import { unverifiedClaims } from "@/lib/jwt";
 import { DEMO_USERS, isRole } from "@/lib/roles";
 import { cookieClient } from "@/lib/supabase/server";
 
@@ -44,7 +45,16 @@ export async function switchDemoUser(form: FormData): Promise<void> {
   const password = optionalEnv("DEMO_PASSWORD");
   if (!demoMode() || !user || !password) redirect("/login?error=demo");
   const db = await cookieClient();
-  await db.auth.signOut();
+
+  // Already this person? Skip the auth round trip entirely. The cookie is not
+  // verified here, but that's fine: this only decides whether to sign in, and
+  // the next page verifies the token against the database anyway.
+  const { data } = await db.auth.getSession();
+  const current = data.session ? unverifiedClaims(data.session.access_token) : null;
+  if (current?.email === user.email && (current.exp ?? 0) * 1000 > Date.now() + 60_000) redirect(next);
+
+  // No signOut() first: that is an extra network round trip, and signing in
+  // overwrites the session cookies anyway. The old demo session simply expires.
   const { error } = await db.auth.signInWithPassword({ email: user.email, password });
   if (error) redirect("/login?error=demo");
   redirect(next);

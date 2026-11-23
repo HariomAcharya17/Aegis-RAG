@@ -2,6 +2,7 @@ import Link from "next/link";
 import { switchDemoUser } from "@/app/auth/actions";
 import { RoleExplorer } from "@/components/RoleExplorer";
 import { StoryPlayer } from "@/components/StoryPlayer";
+import { SubmitButton } from "@/components/SubmitButton";
 import { AegisMark } from "@/components/TopBar";
 import { getSessionUser } from "@/lib/auth";
 import { demoMode } from "@/lib/env";
@@ -13,7 +14,18 @@ export const dynamic = "force-dynamic";
 
 const REPO = "https://github.com/HariomAcharya17/Aegis-RAG";
 
+// The landing stats are 9 count queries. They change slowly, so each server
+// instance reuses them for a minute instead of re-running them on every visit.
+let statsCache: { at: number; value: Awaited<ReturnType<typeof queryStats>> } | null = null;
+
 async function loadStats() {
+  if (statsCache && Date.now() - statsCache.at < 60_000) return statsCache.value;
+  const value = await queryStats();
+  if (value) statsCache = { at: Date.now(), value };
+  return value;
+}
+
+async function queryStats() {
   try {
     const db = adminClient();
     const depts: Department[] = ["general", "finance", "hr", "marketing"];
@@ -51,9 +63,9 @@ function PlayStory({ story, demo }: { story: Story; demo: boolean }) {
     <form action={switchDemoUser}>
       <input type="hidden" name="role" value={story.role} />
       <input type="hidden" name="next" value={`${story.start}${sep}story=${story.id}`} />
-      <button className="btn primary small" type="submit">
+      <SubmitButton className="btn primary small" pendingLabel="Starting story">
         Play this story
-      </button>
+      </SubmitButton>
     </form>
   );
 }
@@ -71,9 +83,9 @@ function StartDemo({ demo }: { demo: boolean }) {
     <form action={switchDemoUser}>
       <input type="hidden" name="role" value={first.role} />
       <input type="hidden" name="next" value={`${first.start}?story=${first.id}`} />
-      <button className="btn primary big" type="submit">
+      <SubmitButton className="btn primary big" pendingLabel="Starting">
         Try it yourself
-      </button>
+      </SubmitButton>
     </form>
   );
 }

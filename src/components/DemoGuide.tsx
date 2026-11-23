@@ -3,6 +3,7 @@
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { switchDemoUser } from "@/app/auth/actions";
+import { SubmitButton } from "@/components/SubmitButton";
 import { DEMO_USERS, ROLE_LABEL, type Role } from "@/lib/roles";
 import { STORIES, storyById, type StoryAction } from "@/lib/stories";
 
@@ -91,10 +92,10 @@ export function DemoGuide({ role }: { role: Role }) {
             <form key={s.id} action={switchDemoUser} onSubmit={() => save({ story: s.id, step: 0, open: true })}>
               <input type="hidden" name="role" value={s.role} />
               <input type="hidden" name="next" value={s.start} />
-              <button type="submit" className={`story-item r-${s.role}`}>
+              <SubmitButton className={`story-item r-${s.role}`}>
                 <strong>{s.title}</strong>
                 <span className="small muted">{s.pitch}</span>
-              </button>
+              </SubmitButton>
             </form>
           ))}
         </div>
@@ -187,9 +188,9 @@ export function DemoGuide({ role }: { role: Role }) {
           <input type="hidden" name="role" value={step.role!} />
           <input type="hidden" name="next" value={pathname} />
           You&apos;re {person(role)} ({ROLE_LABEL[role]}) right now. This step is for {person(step.role!)}.{" "}
-          <button type="submit" className="link-btn">
+          <SubmitButton className="link-btn" pendingLabel="Switching">
             Switch to {person(step.role!)}
-          </button>
+          </SubmitButton>
         </form>
       )}
 
@@ -198,9 +199,9 @@ export function DemoGuide({ role }: { role: Role }) {
           <form action={switchDemoUser} onSubmit={() => save({ ...state, step: stepIndex + 1 })}>
             <input type="hidden" name="role" value={step.action.role} />
             <input type="hidden" name="next" value={step.action.next} />
-            <button type="submit" className="btn primary small">
+            <SubmitButton className="btn primary small" pendingLabel="Signing in">
               {step.action.label}
-            </button>
+            </SubmitButton>
           </form>
         )}
         {(step.action.kind === "ask" || step.action.kind === "attack" || step.action.kind === "link") && !wrongRole && (

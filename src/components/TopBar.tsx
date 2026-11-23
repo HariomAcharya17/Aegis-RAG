@@ -2,6 +2,7 @@ import Link from "next/link";
 import { signOut } from "@/app/auth/actions";
 import { DemoGuide } from "@/components/DemoGuide";
 import { RoleSwitcher } from "@/components/RoleSwitcher";
+import { SubmitButton } from "@/components/SubmitButton";
 import { demoMode } from "@/lib/env";
 import { ROLE_LABEL, type Role } from "@/lib/roles";
 
@@ -39,9 +40,7 @@ export function TopBar({ current, name, email, role }: { current: "chat" | "aren
           )}
           <span className="email faint">{email}</span>
           <form action={signOut}>
-            <button className="btn ghost small" type="submit">
-              Sign out
-            </button>
+            <SubmitButton className="btn ghost small">Sign out</SubmitButton>
           </form>
         </div>
       </header>

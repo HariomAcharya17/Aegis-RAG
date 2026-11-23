@@ -1,4 +1,5 @@
 import { cookieClient, tokenClient, type Db } from "@/lib/supabase/server";
+import { unverifiedClaims } from "@/lib/jwt";
 import { isRole, type Role } from "@/lib/roles";
 
 export type SessionUser = {
@@ -18,31 +19,32 @@ export type SessionUser = {
 export async function getSessionUser(req?: Request): Promise<SessionUser | null> {
   const header = req?.headers.get("authorization") ?? "";
   let db: Db;
-  let userId: string;
-  let email: string;
+  let token: string | undefined;
 
   if (header.startsWith("Bearer ")) {
-    const token = header.slice("Bearer ".length).trim();
+    token = header.slice("Bearer ".length).trim();
     db = tokenClient(token);
-    const { data, error } = await db.auth.getUser(token);
-    if (error || !data.user) return null;
-    userId = data.user.id;
-    email = data.user.email ?? "";
   } else {
     db = await cookieClient();
-    const { data, error } = await db.auth.getUser();
-    if (error || !data.user) return null;
-    userId = data.user.id;
-    email = data.user.email ?? "";
+    // Local cookie read; only hits the network when the access token needs a refresh.
+    const { data } = await db.auth.getSession();
+    token = data.session?.access_token;
   }
+  const userId = token ? unverifiedClaims(token)?.sub : undefined;
+  if (!userId) return null;
 
-  const { data: profile } = await db
+  // One round trip instead of two (auth.getUser + profiles). This query IS the
+  // verification: PostgREST checks the token's signature and expiry and
+  // rejects a forged or expired one, and RLS only returns this row to the
+  // owner of the token (or an executive, who is then genuinely an executive).
+  const { data: profile, error } = await db
     .from("profiles")
-    .select("role, full_name")
+    .select("role, full_name, email")
     .eq("id", userId)
     .maybeSingle();
-  if (!profile || !isRole(profile.role)) return null;
+  if (error || !profile || !isRole(profile.role)) return null;
 
+  const email = (profile.email as string | null) ?? "";
   return {
     id: userId,
     email,
